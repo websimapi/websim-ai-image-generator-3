@@ -109,30 +109,47 @@ h2 {
     border-radius: 8px;
     cursor: crosshair;
     background-color: #fff;
+    box-shadow: inset 0 0 5px rgba(0,0,0,0.1);
 }
 
 .tools {
     display: flex;
+    flex-direction: column;
     gap: 15px;
+    padding: 15px;
+    background-color: #f8f9fa;
+    border-radius: 8px;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+}
+
+.tools-section {
+    display: flex;
     flex-wrap: wrap;
+    gap: 10px;
     align-items: center;
+    padding-bottom: 10px;
+    border-bottom: 1px solid #eee;
 }
 
-#clearCanvas {
-    padding: 8px 16px;
-    background-color: #e74c3c;
-    color: white;
-    border: none;
-    border-radius: 4px;
-    cursor: pointer;
-    transition: background-color 0.3s;
+.tools-section:last-child {
+    padding-bottom: 0;
+    border-bottom: none;
 }
 
-#clearCanvas:hover {
-    background-color: #c0392b;
+.tool-group {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    min-width: 120px;
 }
 
-.color-picker, .brush-size {
+.tool-group label {
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: #546e7a;
+}
+
+.color-picker {
     display: flex;
     align-items: center;
     gap: 8px;
@@ -146,8 +163,83 @@ h2 {
     cursor: pointer;
 }
 
-#brushSize {
-    width: 100px;
+.color-presets {
+    display: flex;
+    gap: 5px;
+    margin-top: 5px;
+}
+
+.color-preset {
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    cursor: pointer;
+    border: 1px solid #ddd;
+    transition: transform 0.2s;
+}
+
+.color-preset:hover {
+    transform: scale(1.1);
+}
+
+.tool-button {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
+    padding: 8px 12px;
+    background-color: #f0f0f0;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.2s;
+    font-size: 0.9rem;
+}
+
+.tool-button:hover {
+    background-color: #e0e0e0;
+}
+
+.tool-button.active {
+    background-color: #3498db;
+    color: white;
+    border-color: #2980b9;
+}
+
+.tool-buttons {
+    display: flex;
+    gap: 5px;
+    margin-top: 5px;
+}
+
+#brushSize, #opacityRange {
+    width: 100%;
+}
+
+#brushSizeDisplay, #opacityDisplay {
+    font-size: 0.8rem;
+    color: #666;
+    text-align: center;
+}
+
+#clearCanvas {
+    background-color: #ff5252;
+    color: white;
+    border: none;
+}
+
+#clearCanvas:hover {
+    background-color: #ff1744;
+}
+
+#undoButton {
+    background-color: #9e9e9e;
+    color: white;
+    border: none;
+}
+
+#undoButton:hover {
+    background-color: #757575;
 }
 
 .image-display {

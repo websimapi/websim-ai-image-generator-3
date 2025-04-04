@@ -6,6 +6,13 @@ document.addEventListener('DOMContentLoaded', () => {
     const clearBtn = document.getElementById('clearCanvas');
     const colorInput = document.getElementById('colorInput');
     const brushSizeInput = document.getElementById('brushSize');
+    const brushSizeDisplay = document.getElementById('brushSizeDisplay');
+    const opacityRange = document.getElementById('opacityRange');
+    const opacityDisplay = document.getElementById('opacityDisplay');
+    const undoButton = document.getElementById('undoButton');
+    const brushTool = document.getElementById('brushTool');
+    const eraserTool = document.getElementById('eraserTool');
+    const colorPresets = document.querySelectorAll('.color-preset');
     const promptInput = document.getElementById('promptInput');
     const aiGeneratedImage = document.getElementById('aiGeneratedImage');
     const imageDescription = document.getElementById('imageDescription');
@@ -18,6 +25,8 @@ document.addEventListener('DOMContentLoaded', () => {
     let lastY = 0;
     let drawingHistory = [];
     let currentStroke = [];
+    let currentTool = 'brush';
+    let strokeOpacity = 1;
     
     // Set canvas size
     function resizeCanvas() {
@@ -38,6 +47,32 @@ document.addEventListener('DOMContentLoaded', () => {
     window.addEventListener('resize', resizeCanvas);
     resizeCanvas();
     
+    // Update tool displays
+    function updateBrushSizeDisplay() {
+        brushSizeDisplay.textContent = `${brushSizeInput.value}px`;
+    }
+    
+    function updateOpacityDisplay() {
+        opacityDisplay.textContent = `${Math.round(opacityRange.value * 100)}%`;
+        strokeOpacity = parseFloat(opacityRange.value);
+    }
+    
+    // Tool selection
+    function setActiveTool(tool) {
+        currentTool = tool;
+        document.querySelectorAll('.tool-button[data-tool]').forEach(btn => {
+            btn.classList.remove('active');
+        });
+        document.querySelector(`.tool-button[data-tool="${tool}"]`).classList.add('active');
+        
+        // Update cursor based on tool
+        if (tool === 'eraser') {
+            canvas.style.cursor = 'url("data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' width=\'20\' height=\'20\' viewBox=\'0 0 24 24\'%3E%3Cpath fill=\'%23000000\' d=\'M16.24,3.56L21.19,8.5C21.97,9.29 21.97,10.55 21.19,11.34L12,20.53C10.44,22.09 7.91,22.09 6.34,20.53L2.81,17C2.03,16.21 2.03,14.95 2.81,14.16L13.41,3.56C14.2,2.78 15.46,2.78 16.24,3.56M4.22,15.58L7.76,19.11C8.54,19.9 9.8,19.9 10.59,19.11L14.12,15.58L9.17,10.63L4.22,15.58Z\'/%3E%3C/svg%3E") 0 16, auto';
+        } else {
+            canvas.style.cursor = 'crosshair';
+        }
+    }
+    
     // Drawing functions
     function startDrawing(e) {
         isDrawing = true;
@@ -50,8 +85,10 @@ document.addEventListener('DOMContentLoaded', () => {
         currentStroke.push({
             x: offsetX,
             y: offsetY,
-            color: colorInput.value,
-            size: brushSizeInput.value
+            color: currentTool === 'eraser' ? '#FFFFFF' : colorInput.value,
+            size: brushSizeInput.value,
+            opacity: currentTool === 'eraser' ? 1 : strokeOpacity,
+            tool: currentTool
         });
     }
     
@@ -63,8 +100,9 @@ document.addEventListener('DOMContentLoaded', () => {
         // Draw line
         ctx.lineJoin = 'round';
         ctx.lineCap = 'round';
-        ctx.strokeStyle = colorInput.value;
+        ctx.strokeStyle = currentTool === 'eraser' ? '#FFFFFF' : colorInput.value;
         ctx.lineWidth = brushSizeInput.value;
+        ctx.globalAlpha = currentTool === 'eraser' ? 1 : strokeOpacity;
         
         ctx.beginPath();
         ctx.moveTo(lastX, lastY);
@@ -75,8 +113,10 @@ document.addEventListener('DOMContentLoaded', () => {
         currentStroke.push({
             x: offsetX,
             y: offsetY,
-            color: colorInput.value,
-            size: brushSizeInput.value
+            color: currentTool === 'eraser' ? '#FFFFFF' : colorInput.value,
+            size: brushSizeInput.value,
+            opacity: currentTool === 'eraser' ? 1 : strokeOpacity,
+            tool: currentTool
         });
         
         lastX = offsetX;
@@ -86,10 +126,18 @@ document.addEventListener('DOMContentLoaded', () => {
     function stopDrawing() {
         if (!isDrawing) return;
         isDrawing = false;
+        ctx.globalAlpha = 1;
         
         // Add the completed stroke to history
         if (currentStroke.length > 0) {
             drawingHistory.push([...currentStroke]);
+        }
+    }
+    
+    function undoLastStroke() {
+        if (drawingHistory.length > 0) {
+            drawingHistory.pop();
+            redrawCanvas();
         }
     }
     
@@ -140,6 +188,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 ctx.lineCap = 'round';
                 ctx.strokeStyle = current.color;
                 ctx.lineWidth = current.size;
+                ctx.globalAlpha = current.opacity;
                 
                 ctx.beginPath();
                 ctx.moveTo(previous.x, previous.y);
@@ -147,6 +196,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 ctx.stroke();
             }
         });
+        
+        ctx.globalAlpha = 1;
     }
     
     // AI Analysis and Image Generation
@@ -278,7 +329,23 @@ document.addEventListener('DOMContentLoaded', () => {
         stopDrawing();
     });
     
+    // Tool event listeners
     clearBtn.addEventListener('click', clearCanvas);
+    undoButton.addEventListener('click', undoLastStroke);
+    
+    brushSizeInput.addEventListener('input', updateBrushSizeDisplay);
+    opacityRange.addEventListener('input', updateOpacityDisplay);
+    
+    brushTool.addEventListener('click', () => setActiveTool('brush'));
+    eraserTool.addEventListener('click', () => setActiveTool('eraser'));
+    
+    colorPresets.forEach(preset => {
+        preset.addEventListener('click', () => {
+            const color = preset.getAttribute('data-color');
+            colorInput.value = color;
+            setActiveTool('brush'); // Switch to brush when selecting a color
+        });
+    });
     
     // Add generate button event listener
     generateButton.addEventListener('click', () => {
@@ -291,6 +358,9 @@ document.addEventListener('DOMContentLoaded', () => {
     
     // Initial state setup
     clearCanvas();
+    updateBrushSizeDisplay();
+    updateOpacityDisplay();
+    setActiveTool('brush');
     
     // Generate image on Enter key in prompt input
     promptInput.addEventListener('keyup', (e) => {
