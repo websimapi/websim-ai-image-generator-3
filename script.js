@@ -114,10 +114,29 @@ document.addEventListener('DOMContentLoaded', () => {
         ctx.lineWidth = brushSizeInput.value;
         ctx.globalAlpha = currentTool === 'eraser' ? 1 : strokeOpacity;
         
-        ctx.beginPath();
-        ctx.moveTo(lastX, lastY);
-        ctx.lineTo(offsetX, offsetY);
-        ctx.stroke();
+        // Use quadratic curves for smoother lines when moving quickly
+        const dx = offsetX - lastX;
+        const dy = offsetY - lastY;
+        const distance = Math.sqrt(dx * dx + dy * dy);
+        
+        if (distance > 2) {
+            // Use quadratic curve for smoother lines
+            ctx.beginPath();
+            ctx.moveTo(lastX, lastY);
+            
+            // Calculate control point
+            const cpX = (lastX + offsetX) / 2;
+            const cpY = (lastY + offsetY) / 2;
+            
+            ctx.quadraticCurveTo(cpX, cpY, offsetX, offsetY);
+            ctx.stroke();
+        } else {
+            // For smaller movements, use regular lines
+            ctx.beginPath();
+            ctx.moveTo(lastX, lastY);
+            ctx.lineTo(offsetX, offsetY);
+            ctx.stroke();
+        }
         
         // Add to current stroke
         currentStroke.push({
@@ -126,7 +145,10 @@ document.addEventListener('DOMContentLoaded', () => {
             color: currentTool === 'eraser' ? '#FFFFFF' : colorInput.value,
             size: brushSizeInput.value,
             opacity: currentTool === 'eraser' ? 1 : strokeOpacity,
-            tool: currentTool
+            tool: currentTool,
+            isQuadratic: distance > 2,
+            cpX: distance > 2 ? (lastX + offsetX) / 2 : null,
+            cpY: distance > 2 ? (lastY + offsetY) / 2 : null
         });
         
         lastX = offsetX;
@@ -231,16 +253,31 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     
     function colorsMatch(color1, color2, tolerance = 10) {
-        return Math.abs(color1[0] - color2[0]) <= tolerance &&
-               Math.abs(color1[1] - color2[1]) <= tolerance &&
-               Math.abs(color1[2] - color2[2]) <= tolerance &&
-               Math.abs(color1[3] - color2[3]) <= tolerance;
+        // Calculate color difference using a more perceptual approach
+        const rDiff = Math.abs(color1[0] - color2[0]);
+        const gDiff = Math.abs(color1[1] - color2[1]);
+        const bDiff = Math.abs(color1[2] - color2[2]);
+        
+        // Weighted RGB difference (human eye is more sensitive to green)
+        const weightedDiff = Math.sqrt(
+            (rDiff * rDiff * 0.299) + 
+            (gDiff * gDiff * 0.587) + 
+            (bDiff * bDiff * 0.114)
+        );
+        
+        // Alpha difference
+        const aDiff = Math.abs(color1[3] - color2[3]);
+        
+        return weightedDiff <= tolerance && aDiff <= tolerance;
     }
     
     function floodFill(imageData, startX, startY, targetColor, fillColor) {
         const { width, height } = imageData;
         const pixelsToCheck = [{x: startX, y: startY}];
         const checkedPixels = new Set();
+        
+        // Increase the tolerance to better handle anti-aliased lines
+        const tolerance = 25; // Increased from previous value
         
         while (pixelsToCheck.length > 0) {
             const { x, y } = pixelsToCheck.pop();
@@ -255,16 +292,20 @@ document.addEventListener('DOMContentLoaded', () => {
             
             // Check if the current pixel matches the target color
             const currentColor = getColorAtPixel(imageData, x, y);
-            if (!colorsMatch(currentColor, targetColor)) continue;
+            if (!colorsMatch(currentColor, targetColor, tolerance)) continue;
             
             // Fill the pixel
             setColorAtPixel(imageData, x, y, fillColor);
             
-            // Add neighbors to check
+            // Add neighbors to check - also check diagonals for better filling
             pixelsToCheck.push({x: x + 1, y});
             pixelsToCheck.push({x: x - 1, y});
             pixelsToCheck.push({x, y: y + 1});
             pixelsToCheck.push({x, y: y - 1});
+            pixelsToCheck.push({x: x + 1, y: y + 1}); // Diagonal neighbors
+            pixelsToCheck.push({x: x - 1, y: y - 1});
+            pixelsToCheck.push({x: x + 1, y: y - 1});
+            pixelsToCheck.push({x: x - 1, y: y + 1});
         }
     }
     
@@ -314,7 +355,14 @@ document.addEventListener('DOMContentLoaded', () => {
                 
                 ctx.beginPath();
                 ctx.moveTo(previous.x, previous.y);
-                ctx.lineTo(current.x, current.y);
+                
+                // Check if this is a quadratic curve
+                if (current.isQuadratic && current.cpX !== null && current.cpY !== null) {
+                    ctx.quadraticCurveTo(current.cpX, current.cpY, current.x, current.y);
+                } else {
+                    ctx.lineTo(current.x, current.y);
+                }
+                
                 ctx.stroke();
             }
         });
