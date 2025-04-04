@@ -168,8 +168,11 @@ document.addEventListener('DOMContentLoaded', () => {
             // Update description
             updateImageDescription(analysis);
             
-            // Generate image based on analysis and prompt
-            const generatedImageUrl = await generateImage(promptInput.value, analysis);
+            // Create enhanced prompt that prioritizes the user's input
+            const enhancedPrompt = await createEnhancedPrompt(promptInput.value, analysis);
+            
+            // Generate image based on the enhanced prompt
+            const generatedImageUrl = await generateImage(enhancedPrompt);
             
             // Display the generated image
             displayGeneratedImage(generatedImageUrl);
@@ -207,10 +210,24 @@ document.addEventListener('DOMContentLoaded', () => {
         return completion.content;
     }
     
-    async function generateImage(prompt, drawingAnalysis) {
-        // More weight on the prompt, use drawing analysis only for style inspiration
-        const enhancedPrompt = `High-quality detailed rendering of "${prompt}". Use these style elements for inspiration: ${drawingAnalysis}`;
+    async function createEnhancedPrompt(userPrompt, drawingAnalysis) {
+        const completion = await websim.chat.completions.create({
+            messages: [
+                {
+                    role: "system",
+                    content: "You are an expert at creating image generation prompts. Your task is to combine a user's intention with style elements from their drawing. The user's intention/prompt should be the PRIMARY focus, with drawing elements only influencing style aspects like colors, composition, and mood. Create a detailed prompt that will generate a high-quality image matching the user's request but styled according to their drawing."
+                },
+                {
+                    role: "user",
+                    content: `User's prompt: "${userPrompt}"\n\nDrawing analysis: ${drawingAnalysis}\n\nCreate an enhanced image generation prompt that prioritizes the user's intention while incorporating style elements from their drawing. Focus on making a high-quality, detailed result.`
+                }
+            ]
+        });
         
+        return completion.content;
+    }
+    
+    async function generateImage(enhancedPrompt) {
         const result = await websim.imageGen({
             prompt: enhancedPrompt,
             aspect_ratio: "1:1"
