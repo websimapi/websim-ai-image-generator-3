@@ -11,6 +11,13 @@ document.addEventListener('DOMContentLoaded', () => {
     const imageDescription = document.getElementById('imageDescription');
     const loadingOverlay = document.getElementById('loadingOverlay');
     
+    // Drawing state
+    let isDrawing = false;
+    let lastX = 0;
+    let lastY = 0;
+    let drawingHistory = [];
+    let currentStroke = [];
+    
     // Set canvas size
     function resizeCanvas() {
         const container = canvas.parentElement;
@@ -29,13 +36,6 @@ document.addEventListener('DOMContentLoaded', () => {
     
     window.addEventListener('resize', resizeCanvas);
     resizeCanvas();
-    
-    // Drawing state
-    let isDrawing = false;
-    let lastX = 0;
-    let lastY = 0;
-    let drawingHistory = [];
-    let currentStroke = [];
     
     // Drawing functions
     function startDrawing(e) {
@@ -273,4 +273,3 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 });
-
