@@ -1,7 +1,6 @@
 import { html, render } from 'lit-html';
 
 document.addEventListener('DOMContentLoaded', () => {
-    // Get all necessary DOM elements
     const canvas = document.getElementById('drawingCanvas');
     const ctx = canvas.getContext('2d');
     const clearBtn = document.getElementById('clearCanvas');
@@ -13,7 +12,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const undoButton = document.getElementById('undoButton');
     const brushTool = document.getElementById('brushTool');
     const eraserTool = document.getElementById('eraserTool');
-    const fillBucketTool = document.getElementById('fillBucketTool');
+    const fillTool = document.getElementById('fillTool');
     const colorPresets = document.querySelectorAll('.color-preset');
     const promptInput = document.getElementById('promptInput');
     const aiGeneratedImage = document.getElementById('aiGeneratedImage');
@@ -29,6 +28,7 @@ document.addEventListener('DOMContentLoaded', () => {
     let currentStroke = [];
     let currentTool = 'brush';
     let strokeOpacity = 1;
+    let paths = []; // Store vector paths
     
     // Set canvas size
     function resizeCanvas() {
@@ -71,7 +71,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (tool === 'eraser') {
             canvas.style.cursor = 'url("data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' width=\'20\' height=\'20\' viewBox=\'0 0 24 24\'%3E%3Cpath fill=\'%23000000\' d=\'M16.24,3.56L21.19,8.5C21.97,9.29 21.97,10.55 21.19,11.34L12,20.53C10.44,22.09 7.91,22.09 6.34,20.53L2.81,17C2.03,16.21 2.03,14.95 2.81,14.16L13.41,3.56C14.2,2.78 15.46,2.78 16.24,3.56M4.22,15.58L7.76,19.11C8.54,19.9 9.8,19.9 10.59,19.11L14.12,15.58L9.17,10.63L4.22,15.58Z\'/%3E%3C/svg%3E") 0 16, auto';
         } else if (tool === 'fill') {
-            canvas.style.cursor = 'url("data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' width=\'20\' height=\'20\' viewBox=\'0 0 24 24\'%3E%3Cpath fill=\'%23000000\' d=\'M19,11.5C19,11.5 17,13.67 17,15A2,2 0 0,0 19,17A2,2 0 0,0 21,15C21,13.67 19,11.5 19,11.5M5.21,10L10,5.21L14.79,10M16.56,8.94L7.62,0L6.21,1.41L8.59,3.79L3.44,8.94C2.85,9.5 2.85,10.47 3.44,11.06L8.94,16.56C9.23,16.85 9.62,17 10,17C10.38,17 10.77,16.85 11.06,16.56L16.56,11.06C17.15,10.47 17.15,9.5 16.56,8.94Z\'/%3E%3C/svg%3E") 0 16, auto';
+            canvas.style.cursor = 'url("data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' width=\'20\' height=\'20\' viewBox=\'0 0 24 24\'%3E%3Cpath fill=\'%23000000\' d=\'M19,11.5C19,11.5 17,13.67 17,15A2,2 0 0,0 19,17A2,2 0 0,0 21,15C21,13.67 19,11.5 19,11.5M5.21,10L10,5.21L14.79,10M16.56,8.94L7.62,0L6.21,1.41L8.59,3.79L3.44,8.94C2.85,9.53 2.85,10.48 3.44,11.06L8.94,16.56C9.23,16.85 9.62,17 10,17C10.38,17 10.77,16.85 11.06,16.56L16.56,11.06C17.15,10.48 17.15,9.53 16.56,8.94Z\'/%3E%3C/svg%3E") 0 16, auto';
         } else {
             canvas.style.cursor = 'crosshair';
         }
@@ -79,14 +79,14 @@ document.addEventListener('DOMContentLoaded', () => {
     
     // Drawing functions
     function startDrawing(e) {
+        const { offsetX, offsetY } = getCoords(e);
+        
         if (currentTool === 'fill') {
-            const { offsetX, offsetY } = getCoords(e);
-            fillArea(offsetX, offsetY);
+            floodFill(Math.floor(offsetX), Math.floor(offsetY), colorInput.value);
             return;
         }
         
         isDrawing = true;
-        const { offsetX, offsetY } = getCoords(e);
         lastX = offsetX;
         lastY = offsetY;
         currentStroke = [];
@@ -114,29 +114,10 @@ document.addEventListener('DOMContentLoaded', () => {
         ctx.lineWidth = brushSizeInput.value;
         ctx.globalAlpha = currentTool === 'eraser' ? 1 : strokeOpacity;
         
-        // Use quadratic curves for smoother lines when moving quickly
-        const dx = offsetX - lastX;
-        const dy = offsetY - lastY;
-        const distance = Math.sqrt(dx * dx + dy * dy);
-        
-        if (distance > 2) {
-            // Use quadratic curve for smoother lines
-            ctx.beginPath();
-            ctx.moveTo(lastX, lastY);
-            
-            // Calculate control point
-            const cpX = (lastX + offsetX) / 2;
-            const cpY = (lastY + offsetY) / 2;
-            
-            ctx.quadraticCurveTo(cpX, cpY, offsetX, offsetY);
-            ctx.stroke();
-        } else {
-            // For smaller movements, use regular lines
-            ctx.beginPath();
-            ctx.moveTo(lastX, lastY);
-            ctx.lineTo(offsetX, offsetY);
-            ctx.stroke();
-        }
+        ctx.beginPath();
+        ctx.moveTo(lastX, lastY);
+        ctx.lineTo(offsetX, offsetY);
+        ctx.stroke();
         
         // Add to current stroke
         currentStroke.push({
@@ -145,10 +126,7 @@ document.addEventListener('DOMContentLoaded', () => {
             color: currentTool === 'eraser' ? '#FFFFFF' : colorInput.value,
             size: brushSizeInput.value,
             opacity: currentTool === 'eraser' ? 1 : strokeOpacity,
-            tool: currentTool,
-            isQuadratic: distance > 2,
-            cpX: distance > 2 ? (lastX + offsetX) / 2 : null,
-            cpY: distance > 2 ? (lastY + offsetY) / 2 : null
+            tool: currentTool
         });
         
         lastX = offsetX;
@@ -192,123 +170,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
     
-    // Fill bucket functionality
-    function fillArea(startX, startY) {
-        // Get the pixel data from the entire canvas
-        const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-        const data = imageData.data;
-        
-        // Get the color to replace (the color at the clicked point)
-        const targetColor = getColorAtPixel(imageData, startX, startY);
-        
-        // Convert hex to rgba
-        const fillColorHex = colorInput.value;
-        const r = parseInt(fillColorHex.slice(1, 3), 16);
-        const g = parseInt(fillColorHex.slice(3, 5), 16);
-        const b = parseInt(fillColorHex.slice(5, 7), 16);
-        const fillColor = [r, g, b, 255 * strokeOpacity];
-        
-        // Don't fill if the target color is the same as the fill color
-        if (colorsMatch(targetColor, fillColor)) {
-            return;
-        }
-        
-        // Create a snapshot for undo history
-        const snapshot = ctx.getImageData(0, 0, canvas.width, canvas.height);
-        const snapshotStroke = [{
-            type: 'fill',
-            data: snapshot,
-            x: startX,
-            y: startY,
-            color: fillColorHex,
-            opacity: strokeOpacity
-        }];
-        drawingHistory.push(snapshotStroke);
-        
-        // Perform flood fill algorithm
-        floodFill(imageData, startX, startY, targetColor, fillColor);
-        
-        // Put the modified image data back on the canvas
-        ctx.putImageData(imageData, 0, 0);
-    }
-    
-    function getColorAtPixel(imageData, x, y) {
-        const { width, data } = imageData;
-        const pixelIndex = (Math.floor(y) * width + Math.floor(x)) * 4;
-        return [
-            data[pixelIndex],     // R
-            data[pixelIndex + 1], // G
-            data[pixelIndex + 2], // B
-            data[pixelIndex + 3]  // A
-        ];
-    }
-    
-    function setColorAtPixel(imageData, x, y, color) {
-        const { width, data } = imageData;
-        const pixelIndex = (Math.floor(y) * width + Math.floor(x)) * 4;
-        data[pixelIndex] = color[0];     // R
-        data[pixelIndex + 1] = color[1]; // G
-        data[pixelIndex + 2] = color[2]; // B
-        data[pixelIndex + 3] = color[3]; // A
-    }
-    
-    function colorsMatch(color1, color2, tolerance = 10) {
-        // Calculate color difference using a more perceptual approach
-        const rDiff = Math.abs(color1[0] - color2[0]);
-        const gDiff = Math.abs(color1[1] - color2[1]);
-        const bDiff = Math.abs(color1[2] - color2[2]);
-        
-        // Weighted RGB difference (human eye is more sensitive to green)
-        const weightedDiff = Math.sqrt(
-            (rDiff * rDiff * 0.299) + 
-            (gDiff * gDiff * 0.587) + 
-            (bDiff * bDiff * 0.114)
-        );
-        
-        // Alpha difference
-        const aDiff = Math.abs(color1[3] - color2[3]);
-        
-        return weightedDiff <= tolerance && aDiff <= tolerance;
-    }
-    
-    function floodFill(imageData, startX, startY, targetColor, fillColor) {
-        const { width, height } = imageData;
-        const pixelsToCheck = [{x: startX, y: startY}];
-        const checkedPixels = new Set();
-        
-        // Increase the tolerance to better handle anti-aliased lines
-        const tolerance = 25; // Increased from previous value
-        
-        while (pixelsToCheck.length > 0) {
-            const { x, y } = pixelsToCheck.pop();
-            
-            // Skip if out of bounds
-            if (x < 0 || x >= width || y < 0 || y >= height) continue;
-            
-            // Skip if we've already checked this pixel
-            const key = `${x},${y}`;
-            if (checkedPixels.has(key)) continue;
-            checkedPixels.add(key);
-            
-            // Check if the current pixel matches the target color
-            const currentColor = getColorAtPixel(imageData, x, y);
-            if (!colorsMatch(currentColor, targetColor, tolerance)) continue;
-            
-            // Fill the pixel
-            setColorAtPixel(imageData, x, y, fillColor);
-            
-            // Add neighbors to check - also check diagonals for better filling
-            pixelsToCheck.push({x: x + 1, y});
-            pixelsToCheck.push({x: x - 1, y});
-            pixelsToCheck.push({x, y: y + 1});
-            pixelsToCheck.push({x, y: y - 1});
-            pixelsToCheck.push({x: x + 1, y: y + 1}); // Diagonal neighbors
-            pixelsToCheck.push({x: x - 1, y: y - 1});
-            pixelsToCheck.push({x: x + 1, y: y - 1});
-            pixelsToCheck.push({x: x - 1, y: y + 1});
-        }
-    }
-    
     function clearCanvas() {
         ctx.fillStyle = 'white';
         ctx.fillRect(0, 0, canvas.width, canvas.height);
@@ -327,20 +188,15 @@ document.addEventListener('DOMContentLoaded', () => {
         
         // Redraw all strokes
         drawingHistory.forEach(stroke => {
-            if (stroke.length === 1 && stroke[0].type === 'fill') {
-                // This is a fill operation, we need to replay it
-                const fillOp = stroke[0];
-                ctx.putImageData(fillOp.data, 0, 0);
-                
-                // Then apply the fill on top of it
-                const startX = fillOp.x;
-                const startY = fillOp.y;
-                
-                // Use fillArea to repeat the fill operation
-                fillArea(startX, startY);
+            if (stroke.length < 1) return;
+            
+            // Handle fill operations
+            if (stroke[0].type === 'fill') {
+                floodFill(stroke[0].x, stroke[0].y, stroke[0].color);
                 return;
             }
             
+            // Handle regular strokes
             if (stroke.length < 2) return;
             
             for (let i = 1; i < stroke.length; i++) {
@@ -355,19 +211,129 @@ document.addEventListener('DOMContentLoaded', () => {
                 
                 ctx.beginPath();
                 ctx.moveTo(previous.x, previous.y);
-                
-                // Check if this is a quadratic curve
-                if (current.isQuadratic && current.cpX !== null && current.cpY !== null) {
-                    ctx.quadraticCurveTo(current.cpX, current.cpY, current.x, current.y);
-                } else {
-                    ctx.lineTo(current.x, current.y);
-                }
-                
+                ctx.lineTo(current.x, current.y);
                 ctx.stroke();
             }
         });
         
         ctx.globalAlpha = 1;
+    }
+    
+    // New function for fill tool
+    function floodFill(x, y, fillColor) {
+        // Create a new path for this fill
+        const newPath = {
+            type: 'fill',
+            x,
+            y,
+            color: fillColor,
+            opacity: strokeOpacity
+        };
+        
+        paths.push(newPath);
+        drawingHistory.push([{
+            type: 'fill',
+            x,
+            y,
+            color: fillColor,
+            opacity: strokeOpacity,
+            tool: 'fill'
+        }]);
+        
+        // Get image data for color matching
+        const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+        const data = imageData.data;
+        
+        // Get the color at the target pixel
+        const targetPos = (y * canvas.width + x) * 4;
+        const targetR = data[targetPos];
+        const targetG = data[targetPos + 1];
+        const targetB = data[targetPos + 2];
+        
+        // Parse the fill color
+        const parsedFillColor = parseColor(fillColor);
+        
+        // Set up the queue for flood fill
+        const queue = [[x, y]];
+        const visited = new Set();
+        const key = `${x},${y}`;
+        visited.add(key);
+        
+        // Tolerance for color matching
+        const tolerance = 20;
+        
+        while (queue.length > 0) {
+            const [px, py] = queue.shift();
+            const pos = (py * canvas.width + px) * 4;
+            
+            // Set the pixel color
+            data[pos] = parsedFillColor.r;
+            data[pos + 1] = parsedFillColor.g;
+            data[pos + 2] = parsedFillColor.b;
+            data[pos + 3] = Math.round(255 * strokeOpacity);
+            
+            // Check neighboring pixels
+            const directions = [[-1, 0], [1, 0], [0, -1], [0, 1]];
+            
+            for (const [dx, dy] of directions) {
+                const nx = px + dx;
+                const ny = py + dy;
+                
+                // Check if within canvas bounds
+                if (nx < 0 || nx >= canvas.width || ny < 0 || ny >= canvas.height) {
+                    continue;
+                }
+                
+                const nkey = `${nx},${ny}`;
+                if (visited.has(nkey)) {
+                    continue;
+                }
+                
+                // Check if the color is similar to the target color
+                const npos = (ny * canvas.width + nx) * 4;
+                const nr = data[npos];
+                const ng = data[npos + 1];
+                const nb = data[npos + 2];
+                
+                if (
+                    Math.abs(nr - targetR) <= tolerance &&
+                    Math.abs(ng - targetG) <= tolerance &&
+                    Math.abs(nb - targetB) <= tolerance
+                ) {
+                    queue.push([nx, ny]);
+                    visited.add(nkey);
+                }
+            }
+        }
+        
+        // Apply the filled image data
+        ctx.putImageData(imageData, 0, 0);
+    }
+    
+    // Helper function to parse color string to RGB
+    function parseColor(colorStr) {
+        // For hex color strings
+        if (colorStr.startsWith('#')) {
+            const r = parseInt(colorStr.slice(1, 3), 16);
+            const g = parseInt(colorStr.slice(3, 5), 16);
+            const b = parseInt(colorStr.slice(5, 7), 16);
+            return { r, g, b };
+        }
+        
+        // For rgb/rgba strings
+        if (colorStr.startsWith('rgb')) {
+            const match = colorStr.match(/(\d+)\s*,\s*(\d+)\s*,\s*(\d+)/);
+            if (match) {
+                return {
+                    r: parseInt(match[1]),
+                    g: parseInt(match[2]),
+                    b: parseInt(match[3])
+                };
+            }
+        }
+        
+        // Default to black if parsing fails
+        return { r: 0, g: 0, b: 0 };
     }
     
     // AI Analysis and Image Generation
@@ -508,7 +474,7 @@ document.addEventListener('DOMContentLoaded', () => {
     
     brushTool.addEventListener('click', () => setActiveTool('brush'));
     eraserTool.addEventListener('click', () => setActiveTool('eraser'));
-    fillBucketTool.addEventListener('click', () => setActiveTool('fill'));
+    fillTool.addEventListener('click', () => setActiveTool('fill'));
     
     colorPresets.forEach(preset => {
         preset.addEventListener('click', () => {
