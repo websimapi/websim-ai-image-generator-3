@@ -47,6 +47,8 @@ h1 {
     border-radius: 8px;
     font-size: 1rem;
     transition: border-color 0.3s;
+    background-color: #f0f8ff; 
+    border-left: 4px solid #3498db; 
 }
 
 #promptInput:focus {
@@ -211,4 +213,3 @@ h2 {
         width: 100%;
     }
 }
-

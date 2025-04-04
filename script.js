@@ -208,8 +208,8 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     
     async function generateImage(prompt, drawingAnalysis) {
-        // Combine the user prompt with the drawing analysis
-        const enhancedPrompt = `${prompt} with the following style and elements: ${drawingAnalysis}`;
+        // More weight on the prompt, use drawing analysis only for style inspiration
+        const enhancedPrompt = `High-quality detailed rendering of "${prompt}". Use these style elements for inspiration: ${drawingAnalysis}`;
         
         const result = await websim.imageGen({
             prompt: enhancedPrompt,
