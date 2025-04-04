@@ -129,11 +129,16 @@ h2 {
     align-items: center;
     padding-bottom: 10px;
     border-bottom: 1px solid #eee;
+    transition: background-color 0.3s ease;
 }
 
 .tools-section:last-child {
     padding-bottom: 0;
     border-bottom: none;
+}
+
+.tools-section:hover {
+    background-color: #f0f0f0;
 }
 
 .tool-group {
@@ -176,10 +181,15 @@ h2 {
     cursor: pointer;
     border: 1px solid #ddd;
     transition: transform 0.2s;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
 }
 
 .color-preset:hover {
     transform: scale(1.1);
+}
+
+.color-preset:active {
+    transform: scale(0.9);
 }
 
 .tool-button {
@@ -194,10 +204,46 @@ h2 {
     cursor: pointer;
     transition: all 0.2s;
     font-size: 0.9rem;
+    position: relative;
+    overflow: hidden;
 }
 
-.tool-button:hover {
-    background-color: #e0e0e0;
+.tool-button::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 5px;
+    height: 5px;
+    background: rgba(255, 255, 255, 0.5);
+    opacity: 0;
+    border-radius: 100%;
+    transform: scale(1, 1) translate(-50%);
+    transform-origin: 50% 50%;
+}
+
+.tool-button:active::after {
+    animation: ripple 0.4s ease-out;
+}
+
+@keyframes ripple {
+    0% {
+        transform: scale(0, 0);
+        opacity: 0.5;
+    }
+    20% {
+        transform: scale(25, 25);
+        opacity: 0.5;
+    }
+    100% {
+        opacity: 0;
+        transform: scale(40, 40);
+    }
+}
+
+.tool-button svg {
+    width: 18px;
+    height: 18px;
 }
 
 .tool-button.active {
@@ -311,6 +357,33 @@ h2 {
 .loading-overlay p {
     color: white;
     font-size: 1.2rem;
+}
+
+#generateButton {
+    position: relative;
+    overflow: hidden;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+    box-shadow: 0 4px 6px rgba(52, 152, 219, 0.2);
+    transition: all 0.3s ease;
+}
+
+#generateButton:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 7px 10px rgba(52, 152, 219, 0.3);
+}
+
+#generateButton:active {
+    transform: translateY(1px);
+    box-shadow: 0 2px 4px rgba(52, 152, 219, 0.2);
+}
+
+.canvas-container, .generated-image-container {
+    transition: box-shadow 0.3s ease;
+}
+
+.canvas-container:hover, .generated-image-container:hover {
+    box-shadow: 0 8px 25px rgba(0,0,0,0.15);
 }
 
 @media (max-width: 768px) {
