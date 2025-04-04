@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Real-Time Image Generator</title>
+    <title>Canvas Prompt to AI Image Generator</title>
     <link rel="stylesheet" href="style.css">
     <script type="importmap">
     {
@@ -16,7 +16,7 @@
 <body>
     <div class="container">
         <div class="header">
-            <h1>Real-Time AI Image Generator</h1>
+            <h1>Canvas Prompt to AI Image Generator</h1>
             <div class="prompt-container">
                 <label for="promptInput">What would you like to create?</label>
                 <input type="text" id="promptInput" placeholder="Describe what you want to see in detail (e.g., A beautiful sunset on the beach with palm trees)">
@@ -51,6 +51,7 @@
                 <div id="imageDescription" class="description">
                     <p>Enter your prompt and draw on the canvas to guide the style of your image</p>
                 </div>
+                <button id="generateButton" class="generate-btn">Generate Image</button>
             </div>
         </div>
     </div>

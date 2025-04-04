@@ -56,6 +56,23 @@ h1 {
     outline: none;
 }
 
+.generate-btn {
+    margin-top: 15px;
+    padding: 10px 20px;
+    background-color: #3498db;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    font-size: 1rem;
+    cursor: pointer;
+    transition: background-color 0.3s;
+    width: 100%;
+}
+
+.generate-btn:hover {
+    background-color: #2980b9;
+}
+
 .main-content {
     display: flex;
     gap: 30px;

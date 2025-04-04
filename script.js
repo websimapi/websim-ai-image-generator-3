@@ -10,6 +10,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const aiGeneratedImage = document.getElementById('aiGeneratedImage');
     const imageDescription = document.getElementById('imageDescription');
     const loadingOverlay = document.getElementById('loadingOverlay');
+    const generateButton = document.getElementById('generateButton');
     
     // Drawing state
     let isDrawing = false;
@@ -89,7 +90,6 @@ document.addEventListener('DOMContentLoaded', () => {
         // Add the completed stroke to history
         if (currentStroke.length > 0) {
             drawingHistory.push([...currentStroke]);
-            analyzeDrawingAndGenerateImage();
         }
     }
     
@@ -280,10 +280,19 @@ document.addEventListener('DOMContentLoaded', () => {
     
     clearBtn.addEventListener('click', clearCanvas);
     
+    // Add generate button event listener
+    generateButton.addEventListener('click', () => {
+        if (drawingHistory.length > 0) {
+            analyzeDrawingAndGenerateImage();
+        } else {
+            alert('Please draw something on the canvas first!');
+        }
+    });
+    
     // Initial state setup
     clearCanvas();
     
-    // Generate image when prompt changes and there's existing drawing
+    // Generate image on Enter key in prompt input
     promptInput.addEventListener('keyup', (e) => {
         if (e.key === 'Enter' && drawingHistory.length > 0) {
             analyzeDrawingAndGenerateImage();
