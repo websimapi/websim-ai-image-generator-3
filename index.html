@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Real-Time Image Generator</title>
+    <link rel="stylesheet" href="style.css">
+    <script type="importmap">
+    {
+      "imports": {
+        "lit-html": "https://cdn.jsdelivr.net/npm/lit-html@2.7.5/+esm"
+      }
+    }
+    </script>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Real-Time AI Image Generator</h1>
+            <div class="prompt-container">
+                <label for="promptInput">What would you like to create?</label>
+                <input type="text" id="promptInput" placeholder="e.g., A beautiful sunset on the beach, A majestic dragon...">
+            </div>
+        </div>
+        
+        <div class="main-content">
+            <div class="canvas-container">
+                <h2>Drawing Canvas</h2>
+                <div class="canvas-wrapper">
+                    <canvas id="drawingCanvas"></canvas>
+                    <div class="tools">
+                        <button id="clearCanvas">Clear Canvas</button>
+                        <div class="color-picker">
+                            <label for="colorInput">Color:</label>
+                            <input type="color" id="colorInput" value="#000000">
+                        </div>
+                        <div class="brush-size">
+                            <label for="brushSize">Brush Size:</label>
+                            <input type="range" id="brushSize" min="1" max="50" value="10">
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="generated-image-container">
+                <h2>Generated Image</h2>
+                <div id="generatedImage" class="image-display">
+                    <div class="placeholder">Your generated image will appear here</div>
+                    <img id="aiGeneratedImage" style="display: none;">
+                </div>
+                <div id="imageDescription" class="description">
+                    <p>Draw on the canvas to see the AI interpretation</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="loading-overlay" id="loadingOverlay">
+        <div class="spinner"></div>
+        <p>Generating your image...</p>
+    </div>
+
+    <script src="script.js" type="module"></script>
+<script defer src="https://static.cloudflareinsights.com/beacon.min.js/v8c78df7c7c0f484497ecbca7046644da1771523124516" integrity="sha512-8DS7rgIrAmghBFwoOTujcf6D9rXvH8xm8JQ1Ja01h9QX8EzXldiszufYa4IFfKdLUKTTrnSFXLDkUEOTrZQ8Qg==" data-cf-beacon='{"version":"2024.11.0","token":"4c6229722a6346bc8eb5cb0e5eae5d41","server_timing":{"name":{"cfCacheStatus":true,"cfEdge":true,"cfExtPri":true,"cfL4":true,"cfOrigin":true,"cfSpeedBrain":true},"location_startswith":null}}' crossorigin="anonymous"></script>
+</body>
+</html>
+
